@@ -1,129 +1,121 @@
 
-!DOCTYPE html
-html lang=ja
-head
-meta charset=UTF-8
-meta name=viewport content=width=device-width, initial-scale=1
-titleAI即興冒険title
-style
-  body {
-    max-width 720px;
-    margin 30px auto;
-    padding 16px;
-    font-family sans-serif;
-    background #17212b;
-    color #f3eee3;
-  }
-  h1 { color #e8b96a; }
-  #log {
-    min-height 280px;
-    padding 16px;
-    background #253441;
-    border-radius 12px;
-    line-height 1.8;
-    white-space pre-wrap;
-  }
-  .controls { display flex; gap 8px; margin-top 12px; }
-  input {
-    flex 1;
-    min-width 0;
-    padding 12px;
-    border-radius 8px;
-    border 1px solid #657786;
-    background #fff;
-    font-size 16px;
-  }
-  button {
-    padding 12px 16px;
-    border 0;
-    border-radius 8px;
-    background #e8b96a;
-    cursor pointer;
-    font-weight bold;
-  }
-  buttondisabled { opacity .5; cursor wait; }
-  #status { color #b7c6d2; font-size 14px; }
-style
-head
-body
-h1⚙️ AI即興冒険h1
-p行動を入力して、未知の遺跡を探索しよう。p
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI即興冒険</title>
+  <style>
+    body {
+      max-width: 720px;
+      margin: 30px auto;
+      padding: 16px;
+      font-family: sans-serif;
+      background: #17212b;
+      color: #f3eee3;
+    }
+    h1 { color: #e8b96a; }
+    #log {
+      min-height: 280px;
+      padding: 16px;
+      background: #253441;
+      border-radius: 12px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+    }
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    input {
+      flex: 1;
+      min-width: 0;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #657786;
+      font-size: 16px;
+    }
+    button {
+      padding: 12px 16px;
+      border: 0;
+      border-radius: 8px;
+      background: #e8b96a;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:disabled { opacity: .5; }
+    #status { color: #b7c6d2; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>⚙️ AI即興冒険</h1>
+  <p>行動を入力して、未知の遺跡を探索しよう。</p>
 
-div id=log冒険を開始します。
+  <div id="log">冒険を開始します。
 あなたは霧に包まれた古い遺跡の入口に立っています。
 目の前には、青白く光る扉があります。
-どう行動しますか？div
+どう行動しますか？</div>
 
-div class=controls
-  input id=action placeholder=例：扉を詳しく調べる
-  button id=send行動！button
-div
-p id=statusデモモードp
+  <div class="controls">
+    <input id="action" placeholder="例：扉を詳しく調べる">
+    <button id="send">行動！</button>
+  </div>
+  <p id="status">デモモード</p>
 
-script
-const API_URL = httpsYOUR-WORKER.workers.dev;
-const log = document.querySelector(#log);
-const input = document.querySelector(#action);
-const button = document.querySelector(#send);
-const status = document.querySelector(#status);
+  <script>
+    const API_URL = "https://ai-adventure-api.gyoz.workers.dev";
+    const log = document.querySelector("#log");
+    const input = document.querySelector("#action");
+    const button = document.querySelector("#send");
+    const status = document.querySelector("#status");
 
-let history = [];
-let demoCount = 0;
+    let history = [];
 
-async function act() {
-  const action = input.value.trim();
-  if (!action  button.disabled) return;
+    async function act() {
+      const action = input.value.trim();
+      if (!action || button.disabled) return;
 
-  button.disabled = true;
-  input.value = ;
-  log.textContent += `nn▶ あなた：${action}n`;
-  status.textContent = 冒険の続きを考えています…;
+      button.disabled = true;
+      input.value = "";
+      log.textContent += "\n\n▶ あなた：" + action + "\n";
+      status.textContent = "冒険の続きを考えています…";
 
-  try {
-    let reply;
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ history, action })
+        });
 
-    if (API_URL.includes(YOUR-WORKER)) {
-      const demos = [
-        扉に触れると、歯車がゆっくり回り始めた。壁の隙間から、小さな鍵が滑り出てくる。,
-        床の紋様が淡く輝く。奥から金属音が聞こえるが、近づくと音はぴたりと止んだ。,
-        扉の脇に古いレバーを見つけた。引くと、地下へ続く階段が姿を現した。
-      ];
-      reply = demos[demoCount++ % demos.length];
-      await new Promise(resolve = setTimeout(resolve, 400));
-    } else {
-      const response = await fetch(API_URL, {
-        method POST,
-        headers { Content-Type applicationjson },
-        body JSON.stringify({ history, action })
-      });
+        if (!response.ok) {
+          throw new Error("AI通信エラー");
+        }
 
-      if (!response.ok) throw new Error(AI通信エラー);
-      const data = await response.json();
-      reply = data.reply;
+        const data = await response.json();
+        const reply = data.reply;
+
+        log.textContent += "\n" + reply;
+        history.push(
+          { role: "user", content: action },
+          { role: "assistant", content: reply }
+        );
+        history = history.slice(-20);
+        status.textContent = "次の行動を入力してください。";
+      } catch (error) {
+        log.textContent +=
+          "\n通信に失敗しました。設定を確認して再試行してください。";
+        status.textContent = "エラー";
+      } finally {
+        button.disabled = false;
+        input.focus();
+      }
     }
 
-    log.textContent += `n${reply}`;
-    history.push(
-      { role user, content action },
-      { role assistant, content reply }
-    );
-
-     会話が長くなりすぎないよう、直近の10往復まで保持
-    history = history.slice(-20);
-    status.textContent = 次の行動を入力してください。;
-  } catch (error) {
-    log.textContent += n通信に失敗しました。少し待って再試行してください。;
-    status.textContent = エラー;
-  } finally {
-    button.disabled = false;
-    input.focus();
-  }
-}
-
-button.addEventListener(click, act);
-input.addEventListener(keydown, event = {
-  if (event.key === Enter) act();
-});
-script
-body
-html
+    button.addEventListener("click", act);
+    input.addEventListener("keydown", event => {
+      if (event.key === "Enter") act();
+    });
+  </script>
+</body>
+</html>
